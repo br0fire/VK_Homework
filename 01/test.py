@@ -1,8 +1,8 @@
 import unittest
 from unittest import mock
-from task1 import SomeModel
-from task1 import predict_message_mood
-from task2 import filter_gen
+from predict import SomeModel
+from predict import predict_message_mood
+from filter import filter_gen
 
 
 class Test1(unittest.TestCase):
@@ -10,7 +10,7 @@ class Test1(unittest.TestCase):
         self.model = SomeModel()
 
     def test_predict_msg_mood_otl(self):
-        with mock.patch('task1.SomeModel.predict') as mock_predict:
+        with mock.patch('predict.SomeModel.predict') as mock_predict:
             mock_predict.return_value = 0.9
             message = 'Привет'
             self.assertEqual(
@@ -20,7 +20,7 @@ class Test1(unittest.TestCase):
             )
 
     def test_predict_msg_mood_norm(self):
-        with mock.patch('task1.SomeModel.predict') as mock_predict:
+        with mock.patch('predict.SomeModel.predict') as mock_predict:
             mock_predict.return_value = 0.5
             message = 'Привет'
             self.assertEqual(
@@ -42,7 +42,7 @@ class Test1(unittest.TestCase):
             )
 
     def test_predict_msg_mood_neud(self):
-        with mock.patch('task1.SomeModel.predict') as mock_predict:
+        with mock.patch('predict.SomeModel.predict') as mock_predict:
             mock_predict.return_value = 0.1
             message = 'Привет'
             self.assertEqual(
@@ -50,6 +50,36 @@ class Test1(unittest.TestCase):
                                      bad_thresholds=0.3, good_thresholds=0.8),
                 'неуд'
              )
+
+    def test_predict_msg_mood_message(self):
+        with mock.patch('predict.SomeModel.predict') as mock_predict:
+            mock_predict.return_value = 0.1
+            message = 'Привет'
+            predict_message_mood(message, self.model,
+                                 bad_thresholds=0.3, good_thresholds=0.8)
+            mock_predict.assert_called_with('Привет')
+
+    def test_predict_msg_mood_bounds(self):
+        with mock.patch('predict.SomeModel.predict') as mock_predict:
+
+            mock_predict.return_value = 2
+            message = 'Привет'
+            self.assertEqual(
+                predict_message_mood(message, self.model,
+                                     bad_thresholds=1, good_thresholds=5),
+                'норм'
+            )
+            self.assertEqual(
+                predict_message_mood(message, self.model,
+                                     bad_thresholds=10, good_thresholds=20),
+                'неуд'
+            )
+
+            self.assertEqual(
+                predict_message_mood(message, self.model,
+                                     bad_thresholds=0.3, good_thresholds=1),
+                'отл'
+            )
 
 
 class TestFileSearch(unittest.TestCase):
@@ -65,6 +95,9 @@ class TestFileSearch(unittest.TestCase):
             next(filter_gen(self.file, search_words)),
             expected_output
         )
+
+        with self.assertRaises(StopIteration):
+            next(filter_gen(self.file, search_words))
         self.file.close()
 
     def test_search_multiple_words(self):
@@ -78,6 +111,8 @@ class TestFileSearch(unittest.TestCase):
             next(filter_gen(self.file, search_words)),
             expected_output[1]
         )
+        with self.assertRaises(StopIteration):
+            next(filter_gen(self.file, search_words))
         self.file.close()
 
     def test_case_insensitive(self):
@@ -87,6 +122,8 @@ class TestFileSearch(unittest.TestCase):
             next(filter_gen(self.file, search_words)),
             expected_output
         )
+        with self.assertRaises(StopIteration):
+            next(filter_gen(self.file, search_words))
         self.file.close()
 
     def test_no_match(self):
