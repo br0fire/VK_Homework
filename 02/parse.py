@@ -18,4 +18,5 @@ def parse_json(json_str: str, required_fields=None,
             if keywords is None:
                 keywords = val
             req = filter(lambda x: x in keywords, val)
-            list(map(keyword_callback, req))
+            for req_val in req:
+                keyword_callback(field, req_val)
