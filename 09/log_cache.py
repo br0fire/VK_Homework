@@ -19,16 +19,17 @@ class LRUCache:
         self.tail = Node('k-1', 'val-1')
         self.head.next = self.tail
         self.tail.prev = self.head
+        self.logger = logging.getLogger()
 
     def get(self, key):
         if key in self.dct:
             node = self.dct[key]
             self.rm_from_list(node)
             self.put_head(node)
-            logging.info("LRUCache: Got value from cache for key %s", key)
+            self.logger.debug("LRUCache: Got value from cache for key %s", key)
             return node.value
         # logging.info(f"LRUCache: Key {key} not found in cache")
-        logging.info("LRUCache: Key %s not found in cache", key)
+        self.logger.error("LRUCache: Key %s not found in cache", key)
         return None
 
     def set(self, key, value):
@@ -38,18 +39,20 @@ class LRUCache:
             self.put_head(node)
             node.value = value
             # logging.info(f"LRUCache: Updated value in cache for key {key}")
-            logging.info("LRUCache: Updated value in cache for key %s", key)
+            self.logger.info(
+                "LRUCache: Updated value in cache for key %s", key)
         else:
             if len(self.dct) == self.limit:
                 self.rm_tail()
-                logging.info(
+                self.logger.info(
                     "LRUCache: Removed least recently used item from cache"
                     )
             node = Node(key, value)
             self.dct[key] = node
             self.put_head(node)
             # logging.info(f"LRUCache: Added new item to cache for key {key}")
-            logging.info("LRUCache: Added new item to cache for key %s", key)
+            self.logger.info(
+                "LRUCache: Added new item to cache for key %s", key)
 
     def rm_from_list(self, node):
         node.prev.next = node.next
@@ -78,17 +81,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     FILENAME = 'cache.log'
+
     if args.filter:
         class CustomFilter(logging.Filter):
             def filter(self, record):
                 return len(record.getMessage().split()) % 2 != 0
         logging.getLogger().addFilter(CustomFilter())
-        logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
-                            filename=FILENAME, level=logging.DEBUG)
-    else:
-        logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
-                            filename=FILENAME, level=logging.DEBUG)
-
+    logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
+                        filename=FILENAME, level=logging.DEBUG)
     if args.stdout:
         console_handler = logging.StreamHandler()
         console_handler.setLevel(logging.INFO)
