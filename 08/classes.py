@@ -26,40 +26,37 @@ class FooList(list):
 
 
 def A_init(n):
-    for i in range(n):
-        a = A(FooList([10_000]), FooList([20_000]))
+    class_arr = [A(FooList([10_000]), FooList([20_000])) for i in range(n)]
+    return class_arr
 
 
 def B_init(n):
-    for i in range(n):
-        b = B(FooList([10_000]), FooList([20_000]))
+    class_arr = [B(FooList([10_000]), FooList([20_000])) for i in range(n)]
+    return class_arr
 
 
 def C_init(n):
-    for i in range(n):
-        c = C(FooList([10_000]), FooList([20_000]))
+    class_arr = [C(FooList([10_000]), FooList([20_000])) for i in range(n)]
+    return class_arr
 
 
-def A_change(n):
-    a = A(FooList([10_000]), FooList([20_000]))
-    for i in range(n):
-        a.x = FooList([1])
-        a.y += FooList([1])
+def A_change(arr):
+    for i in range(len(arr)):
+        arr[i].x = FooList([1000]*5)
+        arr[i].y += FooList([1000]*5)
 
 
-def B_change(n):
-    b = B(FooList([10_000]), FooList([20_000]))
-    for i in range(n):
-        b.x = FooList([1])
-        b.y += FooList([1])
+def B_change(arr):
+    for i in range(len(arr)):
+        arr[i].x = FooList([1000]*5)
+        arr[i].y += FooList([1000]*5)
 
 
-def C_change(n):
-    c = C(FooList([10_000]), FooList([20_000]))
-    for i in range(n):
-        x = c.x()
-        y = c.y()
+def C_change(arr):
+    for i in range(len(arr)):
+        x = arr[i].x()
+        y = arr[i].y()
         if x is not None:
-            x = FooList([1])
+            x = FooList([1000]*5)
         if y is not None:
-            y += FooList([1])
+            y += FooList([1000]*5)
