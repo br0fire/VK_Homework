@@ -46,6 +46,27 @@ class TestLRUCache(unittest.TestCase):
         self.assertEqual(cache.get("k1"), None)
         self.assertEqual(cache.get("k2"), None)
 
+    def test_cache_capacity_one(self):
+        cache = LRUCache(1)
+
+        cache.set("k1", "val1")
+        cache.set("k2", "val2")
+
+        self.assertEqual(cache.get("k1"), None)
+        self.assertEqual(cache.get("k2"), "val2")
+
+    def test_cache_overwrite_with_new_entry(self):
+        cache = LRUCache(2)
+
+        cache.set("k1", "val1")
+        cache.set("k2", "val2")
+        cache.set("k1", "new_val1")
+        cache.set("k3", "val3")
+
+        self.assertEqual(cache.get("k1"), "new_val1")
+        self.assertEqual(cache.get("k2"), None)
+        self.assertEqual(cache.get("k3"), "val3")
+
 
 if __name__ == '__main__':
     unittest.main()
