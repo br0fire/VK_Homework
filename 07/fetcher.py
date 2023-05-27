@@ -39,15 +39,17 @@ async def run_worker(queue, k):
             queue.task_done()
 
 
-async def fetch_batch(urls, num_w, k):
+async def fetch_all(urls_file, num_w, k):
     queue = asyncio.Queue()
     workers = [
         asyncio.create_task(run_worker(queue, k))
         for _ in range(num_w)
     ]
 
-    for url in urls:
-        await queue.put(url)
+    async with aiohttp.ClientSession():
+        for url in urls_file:
+            url = url.strip()
+            queue.put_nowait(url)
 
     await queue.join()
 
@@ -55,23 +57,10 @@ async def fetch_batch(urls, num_w, k):
         worker.cancel()
 
 
-async def fetch_all(urls_file, num_w, k):
-    urls = urls_file.readlines()
-    urls_per_thread = len(urls) // num_w
-    arr = []
-    for i in range(num_w):
-        start_index = i * urls_per_thread
-        end_index = start_index + urls_per_thread if i != num_w - 1 else None
-        urls_chunk = urls[start_index:end_index]
-
-        arr.append(asyncio.create_task(fetch_batch(urls_chunk, num_w, k)))
-
-    await asyncio.gather(*arr, return_exceptions=True)
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("num_workers", type=int, default=5)
-    parser.add_argument("urls_file", type=argparse.FileType("r"),
+    parser.add_argument("-num_workers", type=int, default=10)
+    parser.add_argument("-urls_file", type=argparse.FileType("r"),
                         default='links.txt')
     args = parser.parse_args()
     asyncio.run(fetch_all(args.urls_file, args.num_workers, 3))

@@ -21,7 +21,6 @@ http://jetrank.com/tf/
 http://jetstrap.com/
 http://koken.me/
 http://loader.io/
-http://mashajs.com/index_eng.html#sel=3:38,3:59
 http://memolane.com/
 http://mixture.io/
 http://mlkshk.com/
@@ -40,12 +39,10 @@ http://snippi.com/
 http://socrates.io/
 http://staticloud.com/
 http://tinyletter.com/
-http://unshort.me/
-http://via.me/
+http://unshort.me/f
 http://vimeo-portfolio.heroku.com/?user=davidhiggins
 http://www.cssminifier.com/
 http://www.dreamwidth.org/
-http://www.getloupe.com/
 http://www.grumdrig.com/emoji-list/
 http://www.moonfruit.com/
 http://www.pluss.es/
@@ -85,7 +82,6 @@ http://lancepollard.com/
 http://larsjung.de/
 http://lovesgoodfood.com/jason/
 http://madebyues.com
-http://michaelwright.me/
 http://miketaylr.com/
 http://monkeecreate.com/
 http://nimbupani.com/
