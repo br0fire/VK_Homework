@@ -29,7 +29,7 @@ class Worker(threading.Thread):
                 conn.sendall(response)
             except Exception as e:
                 print(f"Error processing URL {url}: {e}")
-                conn.sendall(f"{url}: error".encode("utf-8"))
+                conn.sendall(f"error {url}".encode("utf-8"))
             finally:
                 # сообщаем, что задача выполнена
                 self.task_queue.task_done()
@@ -46,7 +46,7 @@ class Worker(threading.Thread):
         # Парсим HTML-код и получаем текст
         soup = BeautifulSoup(response.text, 'html.parser')
         text = soup.get_text()
-        
+
         # Удаляем спецсимволы, знаки пунктуации и приводим к нижнему регистру
         text = re.sub('[^A-Za-zА-Яа-я0-9]+', ' ', text)
         text = text.lower()
@@ -73,6 +73,22 @@ class MasterServer:
         self.stats = {
             'total_processed': 0
         }
+        self.max_socket = 10
+        self.threads = []
+
+
+    def run_socket(self, s):
+        while True:
+            conn, addr = s.accept()
+            with conn:
+                print(f"Connected by {addr}")
+                while True:
+                    data = conn.recv(1024)
+                    if not data:
+                        break
+                    url = data.decode("utf-8").strip()
+                    # print(f"Received URL: {url}")
+                    self.task_queue.put((conn, url))
 
     def run(self):
         # запускаем мастер-сервер на прослушивание запросов
@@ -88,17 +104,13 @@ class MasterServer:
                 worker.start()
 
             # принимаем запросы от клиентов
-            while True:
-                conn, addr = s.accept()
-                with conn:
-                    print(f"Connected by {addr}")
-                    while True:
-                        data = conn.recv(1024)
-                        if not data:
-                            break
-                        url = data.decode("utf-8").strip()
-                        # print(f"Received URL: {url}")
-                        self.task_queue.put((conn, url))
+            for i in range(self.max_socket):
+                thread = threading.Thread(target=self.run_socket, args=(s,))
+                self.threads.append(thread)
+                thread.start()
+
+            for thread in self.threads:
+                thread.join()
 
 
 if __name__ == '__main__':
