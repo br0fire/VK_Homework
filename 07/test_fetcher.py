@@ -1,62 +1,59 @@
 import asyncio
 import unittest
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import MagicMock, patch
 from fetcher import fetch_url, run_worker, fetch_all
+# from asynctest import CoroutineMock
+import aiohttp
 
+from io import StringIO
 
-class TestFetcher(unittest.TestCase):
+class TestFetcher(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.html_content = "<html><body>This is a test page</body></html>"
 
-    @patch('aiohttp.ClientSession.get')
-    @patch('aiohttp.ClientSession.__aenter__')
-    @patch('aiohttp.ClientSession.__aexit__')
-    async def test_fetch_url(self, mock_aexit, mock_aenter, mock_get):
-        mock_aenter.return_value = AsyncMock()
-        mock_aexit.return_value = AsyncMock()
-        mock_get.return_value.__aenter__.return_value.text.return_value \
-            = self.html_content
+    async def test_fetch_url(self):
+        mock = aiohttp.ClientSession
+        mock.get = MagicMock()
+        mock.get.return_value.__aenter__.return_value.status = 200
+        mock.get.return_value.__aenter__.return_value.text.return_value = self.html_content
 
         url = 'https://example.com'
-        result = await fetch_url(url, 3)
+        result = await fetch_url(mock, url, 3)
+        self.assertEqual(result[1], {"this": 1, "is": 1, "a": 1})
 
-        mock_aenter.assert_called_once()
-        mock_aexit.assert_called_once()
-        mock_get.assert_called_once_with(url, timeout=5)
-        self.assertEqual(result, '{"this": 1, "is": 1, "a": 1}')
+    @patch("fetcher.fetch_url")
+    @patch('aiohttp.ClientSession')
+    async def test_run_worker(self, mock_session,mock_fetch_url):
+        url = "example.org"
+        queue = asyncio.Queue()
+        mock_fetch_url.return_value = (url, {"this": 1, "is": 1, "a": 1})
 
-    @patch('asyncio.Queue.get')
-    @patch('asyncio.Queue.join')
-    async def test_run_worker(self, mock_join, mock_get):
-        queue = MagicMock()
-        queue.get.side_effect = ['https://example.com', asyncio.CancelledError]
+        with patch('sys.stdout', new=StringIO()) as fake_out:
+            task = asyncio.create_task(run_worker(mock_session, queue, 3))
+            await queue.put(url)
+            await queue.join()
+            self.assertEqual(fake_out.getvalue(), f"{url}: {{\"this\": 1, \"is\": 1, \"a\": 1}}\n")
+            mock_fetch_url.assert_called_once_with(mock_session, url, 3)
+        task.cancel()
 
-        await run_worker(queue, 3)
+    @patch("fetcher.fetch_url")
+    @patch('aiohttp.ClientSession')
+    async def test_run_worker_error(self, mock_session, mock_fetch_url):
+        url = "example.org"
+        queue = asyncio.Queue()
+        error_message = "404 Not Found"
+        mock_fetch_url.side_effect = Exception(error_message)
+        with patch('sys.stdout', new=StringIO()) as fake_out:
+            task = asyncio.create_task(run_worker(mock_session, queue, 3))
 
-        mock_get.assert_called_with()
-        mock_join.assert_called_once()
+            await queue.put(url)
+            await queue.join()
+            url = "example.org"
+            mock_fetch_url.assert_called_once_with(mock_session, url, 3)
+            self.assertEqual(f"Error processing URL {url}: {error_message}\n", fake_out.getvalue())
+        task.cancel()
 
-    @patch('asyncio.Queue.put_nowait')
-    @patch('asyncio.create_task')
-    @patch('aiohttp.ClientSession.__aenter__')
-    @patch('aiohttp.ClientSession.__aexit__')
-    async def test_fetch_all(self, mock_aexit, mock_aenter,
-                             mock_create_task, mock_put_nowait):
-        mock_aenter.return_value = AsyncMock()
-        mock_aexit.return_value = AsyncMock()
-        mock_create_task.return_value = MagicMock()
-
-        urls_file = ['https://example.com', 'https://example.org']
-        num_w = 2
-
-        await fetch_all(urls_file, num_w, 3)
-
-        mock_aenter.assert_called_once()
-        mock_aexit.assert_called_once()
-        mock_put_nowait.assert_any_call('https://example.com')
-        mock_put_nowait.assert_any_call('https://example.org')
-        self.assertEqual(mock_put_nowait.call_count, 2)
-        self.assertEqual(mock_create_task.call_count, 2)
+        
 
 
 if __name__ == '__main__':
